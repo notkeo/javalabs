@@ -89,7 +89,7 @@ public class Snapshot implements Serializable {
                                 if (!hash.equals(entry.getValue())) changed = true;
                             }
                             if (changed) {
-                                String msg = "Next file was changed: \n --path: %s \n --source hash: %s \n --current hash: %s \n --source size: %d \n -- current size: %d ";
+                                String msg = "Next file was changed: \n --path: %s \n --source hash: %s \n --current hash: %s \n --source size: %d \n --current size: %d ";
                                 System.out.println(String.format(msg, f.getAbsolutePath(), entry.getValue(), hash, entry.getKey().getSize(), f.length()));
                                 result = false;
                             }

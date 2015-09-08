@@ -26,7 +26,7 @@ public class Utils {
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.out.println("Access to file was denied: " + file.getAbsoluteFile());
         } catch (IOException e) {
             e.printStackTrace();
         }

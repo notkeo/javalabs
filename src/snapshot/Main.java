@@ -19,7 +19,7 @@ public class Main {
         String param = scanner.next();
         switch (action) {
             case "create": {
-                Snapshot snapshot = createSnapshot(param);
+                Snapshot snapshot = createSnapshot(param, false);
                 db.put(snapshot.getRoot(), snapshot);
                 Utils.persist(db);
             }
@@ -35,21 +35,37 @@ public class Main {
         if (snapshot != null) {
             Snapshot container = snapshot.find(toCheck);
             if (container.validate()) {
-                System.out.println("Кажется что все хорошо, но что-то не так");
+                System.out.println("All okay for : " + param);
             }
-        } else
-            System.out.println("Snapshot for selected directory is not founded");
+        } else {
+            Snapshot newSnap = createSnapshot(param, true);
+            Scanner s = new Scanner(System.in);
+            System.out.println("Persist new files?");
+            int i = s.nextInt();
+            if (i == 1) {
+                for (File f : db.keySet()) {
+                    if (!db.get(f).equals(newSnap.getRoot())) {
+                        Snapshot snapshot1 = newSnap.find(f);
+                        if (!snapshot1.equals(db.get(f))) {
+                            snapshot1.getChildSnapshots().put(f, db.get(f));
+                        }
+                    }
+                }
+                db.put(toCheck, newSnap);
+                Utils.persist(db);
+            }
+        }
         return false;
     }
 
     private static Snapshot getSnapshotFor(File toCheck) {
         for (File f : db.keySet()) {
-            if (toCheck.compareTo(f) >= 0) return db.get(f);
+            if (toCheck.compareTo(f) == 0) return db.get(f);
         }
         return null;
     }
 
-    private static Snapshot createSnapshot(String param) {
+    private static Snapshot createSnapshot(String param, boolean log) {
         File root = new File(param);
         Snapshot rootSnapshot = new Snapshot(root);
         LinkedList<Snapshot> tasks = new LinkedList<>();
@@ -59,13 +75,22 @@ public class Main {
             File[] files = task.getRoot().listFiles();
             for (File f : files) {
                 if (f.isFile()) {
+                    if (log) System.out.println("New file was founded: " + f.getAbsoluteFile());
                     String hash = Utils.calculateHash(f);
-                    FileInstance fileInstance = new FileInstance(f.getAbsolutePath());
-                    task.getHashMap().put(fileInstance, hash);
+                    if (hash != null) {
+                        FileInstance fileInstance = new FileInstance(f.getAbsolutePath());
+                        task.getHashMap().put(fileInstance, hash);
+                    }
                 } else {
-                    Snapshot s = new Snapshot(f);
-                    task.getChildSnapshots().put(f, s);
-                    tasks.add(s);
+                    Snapshot snapshotFor = getSnapshotFor(f);
+                    if (snapshotFor == null) {
+                        if (log) System.out.println("New directory was founded: " + f.getAbsoluteFile());
+                        Snapshot s = new Snapshot(f);
+                        task.getChildSnapshots().put(f, s);
+                        tasks.add(s);
+                    } else {
+                        checkSnapshot(f.getAbsolutePath());
+                    }
                 }
             }
         }
